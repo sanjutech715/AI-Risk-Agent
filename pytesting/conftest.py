@@ -6,19 +6,13 @@ Shared fixtures and configuration for the Risk Agent test suite.
 
 import pytest
 from fastapi.testclient import TestClient
-from app_module.main import create_app
+from app_module.main import app as fastapi_app
 
 
 @pytest.fixture(scope="session")
-def app():
-    """Create a single FastAPI app instance for the whole test session."""
-    return create_app()
-
-
-@pytest.fixture(scope="session")
-def client(app):
+def client():
     """Shared TestClient — no live server needed."""
-    with TestClient(app) as c:
+    with TestClient(fastapi_app) as c:
         yield c
 
 
@@ -70,5 +64,58 @@ def high_risk_doc_payload():
             "anomalies": ["suspicious activity", "duplicate entry", "amount mismatch"],
             "schema_errors": ["invalid format", "missing required field"],
             "completeness_score": 0.1,
+        },
+    }
+
+
+# ── Additional fixtures for tests/test_api.py ───────────────────────────────────
+
+@pytest.fixture
+def sample_document():
+    """Sample document for testing."""
+    return {
+        "document_id": "TEST001",
+        "standardized_data": {
+            "document_type": "invoice",
+            "issuer": "Test Corp",
+            "amount": 10000.0,
+            "currency": "USD",
+            "issue_date": "2024-01-15",
+            "expiry_date": "2024-04-15",
+            "counterparty": "Partner Ltd",
+            "jurisdiction": "US",
+            "metadata": {},
+        },
+        "validation_result": {
+            "is_valid": True,
+            "missing_fields": [],
+            "anomalies": [],
+            "schema_errors": [],
+            "completeness_score": 0.95,
+        },
+    }
+
+
+@pytest.fixture
+def high_risk_document():
+    """High risk document for testing."""
+    return {
+        "document_id": "TEST002",
+        "standardized_data": {
+            "document_type": "contract",
+            "issuer": None,
+            "amount": 500000.0,
+            "currency": "EUR",
+            "issue_date": None,
+            "counterparty": None,
+            "jurisdiction": "Unknown",
+            "metadata": {},
+        },
+        "validation_result": {
+            "is_valid": False,
+            "missing_fields": ["issuer", "counterparty", "issue_date"],
+            "anomalies": ["amount exceeds threshold"],
+            "schema_errors": ["missing required field: issuer"],
+            "completeness_score": 0.30,
         },
     }
