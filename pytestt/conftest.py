@@ -6,13 +6,13 @@ Shared fixtures and configuration for the Risk Agent test suite.
 
 import pytest
 from fastapi.testclient import TestClient
-from app_module.main import create_app
+from app_module.main import app
 
 
 @pytest.fixture(scope="session")
 def app():
     """Create a single FastAPI app instance for the whole test session."""
-    return create_app()
+    return app
 
 
 @pytest.fixture(scope="session")

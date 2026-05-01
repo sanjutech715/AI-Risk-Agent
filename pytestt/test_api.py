@@ -12,13 +12,12 @@ Run:
 import pytest
 from fastapi.testclient import TestClient
 
-from app_module.main import create_app
+from app_module.main import app
 
 # ── Client fixture ─────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module")
 def client():
-    app = create_app()
     with TestClient(app) as c:
         yield c
 
@@ -87,7 +86,7 @@ class TestHealthEndpoint:
 
     def test_agent_name_present(self, client):
         data = client.get("/health").json()
-        assert data["agent"] == "risk-agent"
+        assert data["agent"] == "Decision-Summary-Risk-Agent"
 
     def test_timestamp_present(self, client):
         data = client.get("/health").json()
