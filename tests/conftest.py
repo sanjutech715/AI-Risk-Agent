@@ -1,14 +1,21 @@
 """
 tests/conftest.py
-─────────────────
-Import fixtures from pytesting/conftest.py for tests in this directory.
+──────────────────
+Shared fixtures and configuration for the Risk Agent test suite.
 """
 
-# Import all fixtures from pytesting/conftest.py
-import sys
-import os
+import pytest
+from fastapi.testclient import TestClient
+from app_module.main import app as fastapi_app
 
-# Add parent directory to path to import from pytesting
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pytesting.conftest import *  # noqa: F401, F403
+@pytest.fixture(scope="session")
+def app():
+    """Create a single FastAPI app instance for the whole test session."""
+    return fastapi_app
+
+
+@pytest.fixture(scope="session")
+def client(app):
+    """Shared TestClient — no live server needed."""
+    return TestClient(app)
