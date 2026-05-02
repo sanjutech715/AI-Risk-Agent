@@ -1,6 +1,6 @@
 """
 tests/batch_test.py
-────────────────────
+------------------
 Sends 3 sample documents to the /api/v1/batch endpoint and prints results.
 
 Usage:
@@ -83,21 +83,21 @@ DOCS = [
 
 async def run_batch():
     async with httpx.AsyncClient(timeout=60.0) as client:
-        print(f"📤 Sending {len(DOCS)} documents to {BASE}/api/v1/batch ...\n")
+        print(f"Sending {len(DOCS)} documents to {BASE}/api/v1/batch ...\n")
         resp = await client.post(f"{BASE}/api/v1/batch", json=DOCS)
         resp.raise_for_status()
         results = resp.json()
 
-    print("─" * 55)
+    print("-" * 55)
     for r in results:
-        emoji = {"approve": "✅", "review": "⚠️", "reject": "❌"}.get(r["recommendation"], "?")
+        emoji = {"approve": "[OK]", "review": "[REVIEW]", "reject": "[REJECT]"}.get(r["recommendation"], "[?]")
         print(
             f"{emoji} {r['document_id']:10s} | "
             f"rec={r['recommendation']:7s} | "
             f"score={r['risk_score']:.4f} | "
             f"conf={r['confidence']:.4f}"
         )
-    print("─" * 55)
+    print("-" * 55)
     print(f"\nFull response:\n{json.dumps(results, indent=2)}")
 
 

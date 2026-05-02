@@ -1,8 +1,8 @@
 """
 tests/test_scoring.py
-──────────────────────
+--------------------
 Unit tests for the deterministic risk scoring engine.
-No server or API key needed — pure logic tests.
+No server or API key needed - pure logic tests.
 
 Run:
     pytest tests/test_scoring.py -v
@@ -26,7 +26,7 @@ from agent_module.scoring import (
 )
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# Helpers
 
 def make_validation(
     is_valid=True,
@@ -60,7 +60,7 @@ def make_data(**kwargs) -> StandardizedData:
     return StandardizedData(**defaults)
 
 
-# ── _validation_risk ───────────────────────────────────────────────────────────
+# _validation_risk
 
 class TestValidationRisk:
     def test_valid_no_missing_fields_is_zero(self):
@@ -90,7 +90,7 @@ class TestValidationRisk:
         assert score == pytest.approx(0.6, abs=1e-4)
 
 
-# ── _completeness_risk ─────────────────────────────────────────────────────────
+# _completeness_risk
 
 class TestCompletenessRisk:
     def test_perfect_completeness_is_zero(self):
@@ -110,7 +110,7 @@ class TestCompletenessRisk:
         assert _completeness_risk(val) == pytest.approx(0.03, abs=1e-4)
 
 
-# ── _anomaly_risk ──────────────────────────────────────────────────────────────
+# _anomaly_risk
 
 class TestAnomalyRisk:
     def test_no_anomalies_is_zero(self):
@@ -136,7 +136,7 @@ class TestAnomalyRisk:
         assert score > 0.99
 
 
-# ── _schema_risk ───────────────────────────────────────────────────────────────
+# _schema_risk
 
 class TestSchemaRisk:
     def test_no_schema_errors_is_zero(self):

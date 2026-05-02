@@ -6,11 +6,17 @@ Shared fixtures and configuration for the Risk Agent test suite.
 
 import pytest
 from fastapi.testclient import TestClient
-from app_module.main import app as fastapi_app
+from app_module.main import create_app
 
 
 @pytest.fixture(scope="session")
-def client():
+def app():
+    """Create a single FastAPI app instance for the whole test session."""
+    return create_app()
+
+
+@pytest.fixture(scope="session")
+def client(app):
     """Shared TestClient — no live server needed."""
     with TestClient(fastapi_app) as c:
         yield c

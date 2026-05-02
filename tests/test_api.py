@@ -1,6 +1,6 @@
 """
 tests/test_api.py
-─────────────────
+----------------
 Pytest tests for the Risk Agent API.
 
 Usage:

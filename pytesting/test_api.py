@@ -1,8 +1,8 @@
 """
 tests/test_api.py
-──────────────────
+------------------
 Integration tests for the Risk Agent FastAPI endpoints.
-Uses FastAPI's TestClient — NO live server or API key needed.
+Uses FastAPI's TestClient - NO live server or API key needed.
 The LLM service is automatically mocked (no ANTHROPIC_API_KEY set).
 
 Run:
@@ -12,18 +12,17 @@ Run:
 import pytest
 from fastapi.testclient import TestClient
 
-from app_module.main import create_app
+from app_module.main import app
 
-# ── Client fixture ─────────────────────────────────────────────────────────────
+# Client fixture
 
 @pytest.fixture(scope="module")
 def client():
-    app = create_app()
     with TestClient(app) as c:
         yield c
 
 
-# ── Shared payloads ────────────────────────────────────────────────────────────
+# Shared payloads
 
 VALID_DOC = {
     "document_id": "TEST001",
@@ -70,7 +69,7 @@ HIGH_RISK_DOC = {
 }
 
 
-# ── /health ────────────────────────────────────────────────────────────────────
+# /health endpoint
 
 class TestHealthEndpoint:
     def test_status_200(self, client):
@@ -87,18 +86,18 @@ class TestHealthEndpoint:
 
     def test_agent_name_present(self, client):
         data = client.get("/health").json()
-        assert data["agent"] == "risk-agent"
+        assert data["agent"] == "Decision-Summary-Risk-Agent"
 
     def test_timestamp_present(self, client):
         data = client.get("/health").json()
         assert "timestamp" in data
 
 
-# ── /api/v1/analyze ────────────────────────────────────────────────────────────
+# /api/v1/analyze endpoint
 
 class TestAnalyzeEndpoint:
 
-    # --- Response shape ---
+    # Response shape
 
     def test_status_200_for_valid_doc(self, client):
         r = client.post("/api/v1/analyze", json=VALID_DOC)
@@ -144,7 +143,7 @@ class TestAnalyzeEndpoint:
         data = client.post("/api/v1/analyze", json=VALID_DOC).json()
         assert "processed_at" in data
 
-    # --- Risk scoring correctness ---
+    # Risk scoring correctness
 
     def test_valid_doc_has_low_risk_score(self, client):
         data = client.post("/api/v1/analyze", json=VALID_DOC).json()

@@ -1,6 +1,6 @@
 """
 tests/test_models.py
-─────────────────────
+-------------------
 Unit tests for Pydantic models (AgentRequest, AgentResponse, etc.)
 and the decision_agent pipeline with a mocked LLM service.
 
@@ -21,7 +21,7 @@ from agent_module.models import (
 )
 
 
-# ── ValidationResult ──────────────────────────────────────────────────────────
+# ValidationResult
 
 class TestValidationResultModel:
     def test_valid_minimal(self):
@@ -49,7 +49,7 @@ class TestValidationResultModel:
         assert vr.completeness_score == 1.0
 
 
-# ── StandardizedData ──────────────────────────────────────────────────────────
+# StandardizedData
 
 class TestStandardizedDataModel:
     def test_only_document_type_required(self):
@@ -72,7 +72,7 @@ class TestStandardizedDataModel:
         assert sd.currency == "USD"
 
 
-# ── AgentRequest ──────────────────────────────────────────────────────────────
+# AgentRequest────
 
 class TestAgentRequestModel:
     def test_valid_request(self):
@@ -98,7 +98,7 @@ class TestAgentRequestModel:
             )
 
 
-# ── AgentResponse ─────────────────────────────────────────────────────────────
+# AgentResponse────
 
 class TestAgentResponseModel:
     def _make_response(self, **kwargs):
