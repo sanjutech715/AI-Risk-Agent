@@ -16,9 +16,9 @@ from pydantic import BaseModel, Field
 
 class ValidationResult(BaseModel):
     is_valid: bool
-    missing_fields: list[str] = []
-    anomalies: list[str] = []
-    schema_errors: list[str] = []
+    missing_fields: list[str] = Field(default_factory=list)
+    anomalies: list[str] = Field(default_factory=list)
+    schema_errors: list[str] = Field(default_factory=list)
     completeness_score: float = Field(..., ge=0.0, le=1.0)
 
 
@@ -31,7 +31,7 @@ class StandardizedData(BaseModel):
     expiry_date: Optional[str] = None
     counterparty: Optional[str] = None
     jurisdiction: Optional[str] = None
-    metadata: Dict[str, Any] = {}
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class AgentRequest(BaseModel):

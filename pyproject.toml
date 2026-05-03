@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.111.0",
+    "uv>=0.11.0",
     "uvicorn[standard]>=0.29.0",
     "pydantic>=2.7.0",
     "httpx>=0.27.0",
@@ -16,7 +17,6 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
-    "httpx>=0.27.0",
 ]
 
 [project.scripts]
@@ -27,14 +27,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["app"]
-
-[dependency-groups]
-dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-]
+packages = ["agent_module", "app_module", "routers", "services"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests", "pytesting"]
+testpaths = ["tests"]
