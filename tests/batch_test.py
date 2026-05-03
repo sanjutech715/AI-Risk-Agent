@@ -13,6 +13,12 @@ import json
 
 import httpx
 
+# ANSI color codes
+GREEN = '\033[92m'
+YELLOW = '\033[93m'
+RED = '\033[91m'
+RESET = '\033[0m'
+
 BASE = "http://127.0.0.1:8000"
 
 DOCS = [
@@ -90,7 +96,16 @@ async def run_batch():
 
     print("-" * 55)
     for r in results:
-        emoji = {"approve": "[OK]", "review": "[REVIEW]", "reject": "[REJECT]"}.get(r["recommendation"], "[?]")
+        rec = r["recommendation"]
+        if rec == "approve":
+            emoji = "🟢"
+        elif rec == "review":
+            emoji = "🟡"
+        elif rec == "reject":
+            emoji = "🔴"
+        else:
+            emoji = "❓"
+        
         print(
             f"{emoji} {r['document_id']:10s} | "
             f"rec={r['recommendation']:7s} | "

@@ -129,7 +129,7 @@ def collect_flags(data: StandardizedData, val: ValidationResult) -> list[str]:
     for err in val.schema_errors:
         flags.append(f"Schema error: {err}")
     if data.amount and data.amount > 1_000_000:
-        flags.append("High-value transaction (>1 M) — enhanced review recommended")
+        flags.append("💰 High-value transaction (>$1M) — enhanced review recommended")
     if not data.expiry_date:
         flags.append("No expiry date specified")
     return flags

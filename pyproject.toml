@@ -20,7 +20,7 @@ dev = [
 ]
 
 [project.scripts]
-serve = "main:main"
+serve = "app_module.main:main"
 
 [build-system]
 requires = ["hatchling"]

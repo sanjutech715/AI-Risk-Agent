@@ -115,5 +115,24 @@ $batch = @(
             completeness_score = 0.22
         }
     }
-) | ConvertTo-Json -Depth 10
-Invoke-RestMethod -Uri "$BASE/api/v1/batch" -Method POST -ContentType "application/json" -Body $batch | ConvertTo-Json -Depth 10
+$results = Invoke-RestMethod -Uri "$BASE/api/v1/batch" -Method POST -ContentType "application/json" -Body $batch
+
+Write-Host "-------------------------------------------------------" -ForegroundColor White
+foreach ($r in $results) {
+    $rec = $r.recommendation
+    if ($rec -eq "approve") {
+        $emoji = "🟢"
+    } elseif ($rec -eq "review") {
+        $emoji = "🟡"
+    } elseif ($rec -eq "reject") {
+        $emoji = "🔴"
+    } else {
+        $emoji = "❓"
+    }
+    Write-Host ("{0} {1,10} | rec={2,7} | score={3,6:F4} | conf={4,6:F4}" -f $emoji, $r.document_id, $r.recommendation, $r.risk_score, $r.confidence)
+}
+Write-Host "-------------------------------------------------------" -ForegroundColor White
+
+Write-Host ""
+Write-Host "Full response:" -ForegroundColor Cyan
+$results | ConvertTo-Json -Depth 10
