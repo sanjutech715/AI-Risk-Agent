@@ -25,17 +25,18 @@ from .models import RiskBreakdown, StandardizedData, ValidationResult
 
 # ── Weight configuration ──────────────────────────────────────────────────────
 WEIGHTS = {
-    "validation":   0.30,
+    "validation": 0.30,
     "completeness": 0.25,
-    "anomaly":      0.25,
-    "schema":       0.20,
+    "anomaly": 0.25,
+    "schema": 0.20,
 }
 
 APPROVE_THRESHOLD = 0.25
-REVIEW_THRESHOLD  = 0.55   # above this → reject
+REVIEW_THRESHOLD = 0.55  # above this → reject
 
 
 # ── Component scorers ─────────────────────────────────────────────────────────
+
 
 def _validation_risk(val: ValidationResult) -> float:
     """Binary base + per-missing-field penalty."""
@@ -64,6 +65,7 @@ def _schema_risk(val: ValidationResult) -> float:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
+
 def compute_risk(
     data: StandardizedData,
     val: ValidationResult,
@@ -76,10 +78,7 @@ def compute_risk(
 
     composite = round(
         min(
-            WEIGHTS["validation"]   * v
-            + WEIGHTS["completeness"] * c
-            + WEIGHTS["anomaly"]      * a
-            + WEIGHTS["schema"]       * s,
+            WEIGHTS["validation"] * v + WEIGHTS["completeness"] * c + WEIGHTS["anomaly"] * a + WEIGHTS["schema"] * s,
             1.0,
         ),
         4,

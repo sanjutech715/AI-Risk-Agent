@@ -29,6 +29,7 @@ async_session_factory = sessionmaker(
     expire_on_commit=False,
 )
 
+
 # ── Database Session Context Manager ──────────────────────────────────────────
 @asynccontextmanager
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -42,10 +43,12 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     finally:
         await session.close()
 
+
 # ── Database Models Base ──────────────────────────────────────────────────────
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
+
 
 # ── Database Initialization ───────────────────────────────────────────────────
 async def init_database():
@@ -53,7 +56,9 @@ async def init_database():
     async with engine.begin() as conn:
         # Import all models to ensure they are registered
         from . import models
+
         await conn.run_sync(Base.metadata.create_all)
+
 
 async def drop_database():
     """Drop all database tables (for testing)."""

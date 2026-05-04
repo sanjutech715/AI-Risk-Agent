@@ -9,19 +9,20 @@ Document analysis endpoints with caching and database persistence:
 import asyncio
 import logging
 import time
-from typing import List, Optional
+from typing import Optional
 
 import fastapi
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
-from core.agent.models import AgentRequest, AgentResponse
-from services.agent import run_agent
 from config import settings
+from core.agent.models import AgentRequest, AgentResponse
 from core.cache import cache
 from core.database import get_db_session
-from core.models import AnalysisResult, AuditLog
-from services.auth import get_token_from_header, oauth2_scheme
-from services.auth_service import User, get_current_active_user, get_current_user
+from core.models import AnalysisResult
+from services.agent import run_agent
+from services.auth import oauth2_scheme
+from services.auth_service import (User, get_current_active_user,
+                                   get_current_user)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Agent"])
@@ -55,7 +56,7 @@ async def save_analysis_to_db(result: AgentResponse, processing_time_ms: int) ->
                 summary=result.summary,
                 risk_breakdown=result.risk_breakdown.dict(),
                 processing_time_ms=processing_time_ms,
-                llm_provider=getattr(result, 'llm_provider', None),
+                llm_provider=getattr(result, "llm_provider", None),
             )
             session.add(analysis)
             await session.commit()
@@ -166,10 +167,7 @@ async def analyze_document(
 
     except Exception as exc:
         processing_time = int((time.time() - start_time) * 1000)
-        logger.error(
-            f"Agent failed for {req.document_id} after {processing_time}ms: {exc}",
-            exc_info=True
-        )
+        logger.error(f"Agent failed for {req.document_id} after {processing_time}ms: {exc}", exc_info=True)
         raise fastapi.HTTPException(status_code=500, detail=str(exc))
 
 
@@ -187,22 +185,16 @@ async def batch_analyze(
     Results are returned in the same order as the input array.
     """
     if len(requests) > 20:
-        raise fastapi.HTTPException(
-            status_code=400, detail="Batch limit is 20 documents per request."
-        )
+        raise fastapi.HTTPException(status_code=400, detail="Batch limit is 20 documents per request.")
 
     logger.info(f"Batch processing {len(requests)} document(s)")
-    results = await asyncio.gather(
-        *[run_agent(r) for r in requests], return_exceptions=True
-    )
+    results = await asyncio.gather(*[run_agent(r) for r in requests], return_exceptions=True)
 
     responses: list[AgentResponse] = []
     for req, result in zip(requests, results):
         if isinstance(result, Exception):
             logger.error(f"Batch item {req.document_id} failed: {result}")
-            raise fastapi.HTTPException(
-                status_code=500, detail=f"{req.document_id}: {result}"
-            )
+            raise fastapi.HTTPException(status_code=500, detail=f"{req.document_id}: {result}")
         responses.append(result)  # type: ignore[arg-type]
 
     return responses

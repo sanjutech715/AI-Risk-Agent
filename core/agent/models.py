@@ -11,8 +11,8 @@ from typing import Any, Dict, Literal, Optional
 
 from pydantic import BaseModel, Field
 
-
 # ── Input Models ──────────────────────────────────────────────────────────────
+
 
 class ValidationResult(BaseModel):
     is_valid: bool
@@ -42,6 +42,7 @@ class AgentRequest(BaseModel):
 
 # ── Output Models ─────────────────────────────────────────────────────────────
 
+
 class RiskBreakdown(BaseModel):
     validation_risk: float
     completeness_risk: float
@@ -59,11 +60,7 @@ class AgentResponse(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0)
     reasoning: str
     flags: list[str] = []
-    processed_at: str = Field(
-        default_factory=lambda: (
-            datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-        )
-    )
+    processed_at: str = Field(default_factory=lambda: (datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")))
 
 
 class HealthResponse(BaseModel):

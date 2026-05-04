@@ -5,8 +5,9 @@ Pluggable LLM service wrapper.
 Supports local Ollama deployments or Anthropic via environment configuration.
 """
 
-import os
 import logging
+import os
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -15,9 +16,7 @@ ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
 OLLAMA_DEFAULT_URL = "http://127.0.0.1:11434"
 OLLAMA_DEFAULT_MODEL = "llama2"
-FALLBACK_SUMMARY = (
-    "Summary unavailable — set OLLAMA_URL or ANTHROPIC_API_KEY to enable AI-generated summaries."
-)
+FALLBACK_SUMMARY = "Summary unavailable — set OLLAMA_URL or ANTHROPIC_API_KEY to enable AI-generated summaries."
 
 
 def _build_ollama_payload(prompt: str) -> dict:

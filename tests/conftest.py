@@ -5,7 +5,6 @@ Shared fixtures and configuration for the Risk Agent test suite.
 """
 
 import sys
-import os
 from pathlib import Path
 
 import pytest

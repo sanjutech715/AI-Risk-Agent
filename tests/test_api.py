@@ -10,7 +10,6 @@ Usage:
 
 import pytest
 
-
 # Use fixtures from pytesting/conftest.py - no live server needed
 
 
@@ -92,7 +91,7 @@ class TestAnalyzeEndpoint:
         response = client.post("/api/v1/analyze", json=sample_document)
         assert response.status_code == 200
         data = response.json()
-        
+
         # Check response fields
         assert data["document_id"] == "TEST001"
         assert "summary" in data
@@ -107,7 +106,7 @@ class TestAnalyzeEndpoint:
         response = client.post("/api/v1/analyze", json=high_risk_document)
         assert response.status_code == 200
         data = response.json()
-        
+
         # High risk document should have higher risk score
         assert data["risk_score"] > 0.3
         # Should have flags for missing fields
@@ -123,7 +122,7 @@ class TestAnalyzeEndpoint:
                 "anomalies": [],
                 "schema_errors": [],
                 "completeness_score": 1.0,
-            }
+            },
         }
         response = client.post("/api/v1/analyze", json=invalid_doc)
         # Should return 422 validation error

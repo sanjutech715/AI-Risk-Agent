@@ -7,28 +7,25 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 
-from services.auth import get_token_from_header, oauth2_scheme
-from services.auth_service import (
-    authenticate_user,
-    create_access_token,
-    create_user as create_user_in_store,
-    get_current_active_user,
-    get_current_user,
-    User,
-)
 from config import settings
+from services.auth import oauth2_scheme
+from services.auth_service import User, authenticate_user, create_access_token
+from services.auth_service import create_user as create_user_in_store
+from services.auth_service import get_current_active_user, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
 class Token(BaseModel):
     """Token response model."""
+
     access_token: str
     token_type: str
 
 
 class TokenData(BaseModel):
     """Token data model."""
+
     username: str | None = None
 
 
@@ -86,9 +83,7 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=settings.jwt_expiration_hours * 60)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
+    access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
     return Token(access_token=access_token, token_type="bearer")
 
 

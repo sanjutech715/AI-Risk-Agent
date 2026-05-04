@@ -58,7 +58,7 @@ class RedisCache(CacheBackend):
             value = await self.redis.get(key)
             if value is None:
                 return None
-            return json.loads(value.decode('utf-8'))
+            return json.loads(value.decode("utf-8"))
         except Exception as e:
             logger.warning(f"Redis cache get error for key {key}: {e}")
             return None
@@ -110,11 +110,11 @@ class MemoryCache(CacheBackend):
             return None
 
         # Check TTL
-        if entry.get('expires_at') and entry['expires_at'] < datetime.now().timestamp():
+        if entry.get("expires_at") and entry["expires_at"] < datetime.now().timestamp():
             await self.delete(key)
             return None
 
-        return entry['value']
+        return entry["value"]
 
     async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
         """Set value in memory cache."""
@@ -122,10 +122,7 @@ class MemoryCache(CacheBackend):
         if ttl:
             expires_at = datetime.now().timestamp() + ttl
 
-        self._cache[key] = {
-            'value': value,
-            'expires_at': expires_at
-        }
+        self._cache[key] = {"value": value, "expires_at": expires_at}
 
     async def delete(self, key: str) -> None:
         """Delete value from memory cache."""
@@ -138,7 +135,7 @@ class MemoryCache(CacheBackend):
             return False
 
         # Check TTL
-        if entry.get('expires_at') and entry['expires_at'] < datetime.now().timestamp():
+        if entry.get("expires_at") and entry["expires_at"] < datetime.now().timestamp():
             await self.delete(key)
             return False
 

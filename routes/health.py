@@ -6,14 +6,14 @@ Liveness / readiness probe endpoints with dependency checks.
 
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException
+from sqlalchemy import text
 
 from config import settings
-from core.database import get_db_session
 from core.cache import cache
-from sqlalchemy import text
+from core.database import get_db_session
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,12 @@ async def check_database() -> Dict[str, Any]:
 
     # If no real database is configured, avoid failing the detailed health check.
     db_url = settings.database_url.strip().lower()
-    if not db_url or "user:password" in db_url or db_url.startswith("sqlite") or db_url == "postgresql://user:password@localhost:5432/risk_agent":
+    if (
+        not db_url
+        or "user:password" in db_url
+        or db_url.startswith("sqlite")
+        or db_url == "postgresql://user:password@localhost:5432/risk_agent"
+    ):
         return {
             "status": "disabled",
             "reason": "Database is not configured for local development",
@@ -119,11 +124,9 @@ async def health_detailed():
 
     # Check for any unhealthy services
     unhealthy_services = [
-        service for service, check in [
-            ("database", database_health),
-            ("cache", cache_health),
-            ("llm", llm_health)
-        ] if check.get("status") == "unhealthy"
+        service
+        for service, check in [("database", database_health), ("cache", cache_health), ("llm", llm_health)]
+        if check.get("status") == "unhealthy"
     ]
 
     if unhealthy_services:
@@ -137,7 +140,7 @@ async def health_detailed():
             "database": database_health,
             "cache": cache_health,
             "llm_service": llm_health,
-        }
+        },
     }
 
     # Return error status if unhealthy

@@ -6,9 +6,9 @@ SQLAlchemy database models for the Risk Agent.
 
 import uuid
 from datetime import datetime
-from typing import Dict, Any, Optional
 
-from sqlalchemy import Column, String, Integer, Float, Text, DateTime, JSON, Boolean, ForeignKey
+from sqlalchemy import (JSON, Boolean, Column, DateTime, Float, ForeignKey,
+                        Integer, String, Text)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 

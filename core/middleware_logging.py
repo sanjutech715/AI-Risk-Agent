@@ -39,7 +39,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 "url": str(request.url),
                 "headers": dict(request.headers),
                 "client_ip": self._get_client_ip(request),
-            }
+            },
         )
 
         try:
@@ -56,12 +56,12 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                     "correlation_id": correlation_id,
                     "status_code": response.status_code,
                     "process_time_ms": round(process_time * 1000, 2),
-                    "response_headers": dict(response.headers) if hasattr(response, 'headers') else {},
-                }
+                    "response_headers": dict(response.headers) if hasattr(response, "headers") else {},
+                },
             )
 
             # Add correlation ID to response headers
-            if hasattr(response, 'headers'):
+            if hasattr(response, "headers"):
                 response.headers["X-Correlation-ID"] = correlation_id
 
             return response
@@ -78,17 +78,14 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                     "correlation_id": correlation_id,
                     "process_time_ms": round(process_time * 1000, 2),
                     "error": str(exc),
-                }
+                },
             )
 
             # Return error response with correlation ID
             return JSONResponse(
                 status_code=500,
-                content={
-                    "error": "Internal server error",
-                    "correlation_id": correlation_id
-                },
-                headers={"X-Correlation-ID": correlation_id}
+                content={"error": "Internal server error", "correlation_id": correlation_id},
+                headers={"X-Correlation-ID": correlation_id},
             )
 
     def _get_client_ip(self, request: Request) -> str:

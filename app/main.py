@@ -7,15 +7,16 @@ Registers all routers and middleware.
 
 import logging
 import socket
+
+import fastapi
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import fastapi
 
 from config import settings
-from routes import health, rout
 from core.middleware_logging import LoggingMiddleware
 from core.rate_limiting import RateLimitingMiddleware
+from routes import health, rout
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -55,6 +56,7 @@ app.add_middleware(
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(RateLimitingMiddleware)
 
+
 # ── Global exception handler ──────────────────────────────────────────────────
 @app.exception_handler(Exception)
 async def global_exception_handler(request: fastapi.Request, exc: Exception):
@@ -64,9 +66,11 @@ async def global_exception_handler(request: fastapi.Request, exc: Exception):
         content={"error": "Internal server error", "detail": str(exc)},
     )
 
+
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(health.router)
 app.include_router(rout.router, prefix="/api/v1")
+
 
 # ── Root ──────────────────────────────────────────────────────────────────────
 @app.get("/", tags=["Root"])
@@ -77,7 +81,9 @@ async def root():
         "health": "/health",
     }
 
+
 # ── Run server ────────────────────────────────────────────────────────────────
+
 
 def find_available_port(host: str, start_port: int, max_attempts: int = 5) -> int:
     port = start_port
@@ -105,4 +111,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
