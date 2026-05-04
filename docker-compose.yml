@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # Risk Agent API
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=127.0.0.1
+      - PORT=8000
+      - DATABASE_URL=postgresql://risk_agent:password@db:5432/risk_agent
+      - REDIS_URL=redis://cache:6379/0
+      - LOG_LEVEL=INFO
+      - ENABLE_CACHING=true
+      - ENABLE_RATE_LIMITING=true
+      - HEALTH_CHECK_DATABASE=true
+      - HEALTH_CHECK_CACHE=true
+      - HEALTH_CHECK_LLM=true
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      ollama:
+        condition: service_completed_successfully
+    volumes:
+      - .:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/detailed"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=risk_agent
+      - POSTGRES_USER=risk_agent
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U risk_agent -d risk_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache
+  cache:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Ollama LLM Service (Optional)
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=127.0.0.1
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    profiles:
+      - with-llm
+
+volumes:
+  postgres_data:
+  redis_data:
+  ollama_data:
+
+networks:
+  default:
+    driver: bridge

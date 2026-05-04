@@ -48,20 +48,22 @@ The Risk Agent API follows a modular architecture with clear separation of conce
 
 ### Core Components
 
-1. **Routers** (`routers/`): Handle HTTP requests and responses
+1. **Routers** (`routes/`): Handle HTTP requests and responses
    - `agent.py`: Main API endpoints for document analysis
    - `health.py`: Health check endpoint
 
-2. **Agent Module** (`agent_module/`): Business logic for risk assessment
-   - `models.py`: Pydantic schemas for request/response validation
+2. **Agent Module** (`core/agent/`): Business logic for risk assessment
+   - `models.py`: Pydantic request/response schemas
    - `scoring.py`: Risk score calculation algorithms
-   - `decision_agent.py`: Orchestrates scoring and summary generation
+   - `agent.py`: Orchestrates scoring and summary generation
 
-3. **Services** (`services/`): External integrations
+3. **Core Services** (`core/`): Shared services and infrastructure
    - `llm_service.py`: LLM integration for document summarization
+   - `database.py`: Database and session management
+   - `cache.py`: Cache abstraction and Redis fallback
 
-4. **App Module** (`app_module/`): Application configuration and startup
-   - `main.py`: FastAPI app factory and dependency injection
+4. **Application** (`app/`): FastAPI application factory and startup
+   - `main.py`: FastAPI app factory and router registration
 
 ### Data Flow
 
@@ -83,39 +85,36 @@ Request → Router → Decision Agent → Scoring → LLM Service → Response
 
 ```
 risk-agent/
-├── app.py                    # Entry point that starts uvicorn
-├── run_from_json.py          # Script to run analysis from JSON file
+├── run.py                    # Entry point that starts uvicorn
 ├── pyproject.toml
 ├── requirements.txt
 ├── README.md
-├── app_module/
+├── app/
 │   ├── __init__.py
 │   └── main.py               # FastAPI app factory and router registration
-├── agent_module/
+├── config.py                 # Application configuration via Pydantic settings
+├── core/
 │   ├── __init__.py
-│   ├── models.py             # Pydantic request/response schemas
-│   ├── scoring.py            # Risk score computation and recommendation logic
-│   └── decision_agent.py     # Agent orchestration: score → summary → response
-├── routers/
+│   ├── agent/
+│   │   ├── __init__.py
+│   │   ├── agent.py           # Orchestrates risk analysis
+│   │   ├── models.py          # Request/response schemas
+│   │   └── scoring.py         # Risk scoring logic
+│   ├── cache.py              # Cache abstraction and Redis fallback
+│   ├── database.py           # Database session management
+│   ├── llm_service.py        # LLM summary generation
+│   ├── middleware_logging.py
+│   ├── rate_limiting.py
+├── routes/
 │   ├── __init__.py
 │   ├── agent.py              # POST /api/v1/analyze and POST /api/v1/batch
 │   └── health.py             # GET /health
-├── services/
-│   ├── __init__.py
-│   └── llm_service.py        # Pluggable Ollama / Anthropic summary service
 ├── data/
 │   └── risk_agent.json       # Example request payload
-├── scripts/
-│   ├── start.ps1             # PowerShell startup script
-│   └── startup.py            # Python startup script
 └── tests/
-    ├── batch_test.py
+    ├── __init__.py
     ├── conftest.py
-    ├── test_api.py
-    ├── test_examples.ps1      # PowerShell test examples
-    ├── test_examples.sh       # Shell test examples
-    ├── test_models.py
-    └── test_scoring.py
+    └── test_api.py
 ```
 
 ---
@@ -123,21 +122,12 @@ risk-agent/
 ## Requirements
 
 - Python 3.11+
-- [uv](https://docs.astral.sh/uv/) (recommended) or pip
+- Redis (optional; health checks degrade gracefully when unavailable)
+- PostgreSQL / async database for full runtime
 
 ---
 
 ## Installation
-
-### With uv (recommended)
-
-```bash
-git clone <repo-url>
-cd risk-agent
-uv sync
-```
-
-### With pip
 
 ```bash
 pip install -r requirements.txt
@@ -147,57 +137,60 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-After installation, you can use the provided scripts to start the server and run tests.
-
-### Automated Startup
-
-Use the startup script to automatically start the server and run smoke tests:
+Start the API server:
 
 ```bash
-# Using Python
-python scripts/startup.py
-
-# Using uv
-uv run python scripts/startup.py
+python run.py
 ```
 
-On Windows, you can also use the PowerShell script:
+Open Swagger UI at:
 
-```powershell
-.\scripts\start.ps1
+```text
+http://127.0.0.1:8000/docs
 ```
-
-### Manual Testing
-
-Once the server is running, test with the example data:
-
-```bash
-python run_from_json.py
-```
-
-This will send the sample document from `data/risk_agent.json` to the API and save the response to `data/risk_agent_output.json`.
 
 ---
 
-## Configuration
+## Health Endpoints
 
-The application supports configuration via environment variables:
+- `GET /health` — basic service health
+- `GET /health/detailed` — checks database, cache, and LLM dependencies
 
-| Variable            | Default     | Description |
-|---------------------|-------------|-------------|
-| `PORT`              | `8000`      | API port |
-| `UVICORN_RELOAD`    | `0`         | Set `1` to enable hot reload |
-| `OLLAMA_URL`        | `http://127.0.0.1:11434` | Local Ollama endpoint |
-| `OLLAMA_MODEL`      | `llama2`    | Ollama model name |
-| `ANTHROPIC_API_KEY` | *(not set)* | Optional Anthropic API key |
-| `LLM_PROVIDER`      | `ollama` if `OLLAMA_URL` set, else `anthropic` | Preferred LLM provider |
+---
 
-### LLM Configuration
+## API Endpoints
 
-The service supports two LLM providers:
+- `POST /api/v1/analyze` — analyze a single document
+- `POST /api/v1/batch` — analyze multiple documents
 
-- **Ollama**: Local LLM inference (recommended for development)
-- **Anthropic**: Cloud-based LLM service (requires API key)
+---
+
+## Testing
+
+Run pytest:
+
+```bash
+pytest tests/test_api.py -q
+```
+
+---
+
+## Project Layout
+
+- `run.py` — entry point that starts Uvicorn
+- `app/` — FastAPI application factory
+- `core/` — services, auth, database, cache, and agent logic
+- `routes/` — API routers
+- `tests/` — automated tests
+- `data/` — example request payloads
+
+---
+
+## Notes
+
+- The app supports hot reload via `UVICORN_RELOAD=1 python run.py`
+- Swagger docs are available at `/docs`
+- Health checks are designed to tolerate transient cache or LLM failures by returning a degraded status rather than a hard 503 failure
 
 If no LLM provider is configured, the service returns a valid response with a fallback summary.
 
@@ -206,10 +199,10 @@ If no LLM provider is configured, the service returns a valid response with a fa
 ## Running the Server
 
 ```bash
-python app.py
+python run.py
 
 # or via uv
-uv run python app.py
+uv run python run.py
 ```
 
 Environment variables:
@@ -396,7 +389,7 @@ Recommendation thresholds:
 
 4. Run in development mode with hot reload:
    ```bash
-   UVICORN_RELOAD=1 python app.py
+   UVICORN_RELOAD=1 python run.py
    ```
 
 ### Code Quality
@@ -430,7 +423,7 @@ COPY . .
 RUN pip install -r requirements.txt
 
 EXPOSE 8000
-CMD ["python", "app.py"]
+CMD ["python", "run.py"]
 ```
 
 ```bash

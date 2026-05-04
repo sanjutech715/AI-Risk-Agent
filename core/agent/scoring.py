@@ -21,7 +21,7 @@ from __future__ import annotations
 import math
 from typing import Tuple
 
-from agent_module.models import RiskBreakdown, StandardizedData, ValidationResult
+from .models import RiskBreakdown, StandardizedData, ValidationResult
 
 # ── Weight configuration ──────────────────────────────────────────────────────
 WEIGHTS = {

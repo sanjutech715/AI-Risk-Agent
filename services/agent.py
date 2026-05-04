@@ -9,14 +9,14 @@ Orchestrates the full agent pipeline:
 
 from __future__ import annotations
 
-from agent_module.models import AgentRequest, AgentResponse
-from agent_module.scoring import (
+from core.agent.models import AgentRequest, AgentResponse
+from core.agent.scoring import (
     collect_flags,
     compute_confidence,
     compute_recommendation,
     compute_risk,
 )
-from services.llm_service import generate_summary
+from core.llm_service import generate_summary
 
 
 # ── Prompt builder ────────────────────────────────────────────────────────────
