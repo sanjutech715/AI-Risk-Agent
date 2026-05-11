@@ -133,9 +133,18 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-Start the API server:
+Activate the virtual environment and start the API server:
 
 ```bash
+# Windows (option 1 - manual activation)
+.venv\Scripts\activate
+python run.py
+
+# Windows (option 2 - batch file - recommended)
+.\run.bat
+
+# Linux/macOS
+source .venv/bin/activate
 python run.py
 ```
 
