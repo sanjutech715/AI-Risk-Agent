@@ -26,7 +26,7 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     """Token data model."""
 
-    username: Optional[str] = None
+    username: str | None = None
 
 
 class UserCreate(BaseModel):

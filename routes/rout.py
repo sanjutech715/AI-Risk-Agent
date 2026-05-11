@@ -64,7 +64,7 @@ async def save_analysis_to_db(result: AgentResponse, processing_time_ms: int) ->
         logger.error(f"Failed to save analysis to database: {e}")
 
 
-async def get_cached_result(cache_key: str) -> Optional[AgentResponse]:
+async def get_cached_result(cache_key: str) -> AgentResponse | None:
     """Get cached analysis result."""
     if not settings.enable_caching:
         return None

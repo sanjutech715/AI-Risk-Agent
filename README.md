@@ -220,32 +220,6 @@ If no LLM provider is configured, the service still returns a valid response wit
 
 ---
 
-## GitHub Repository Automation
-
-This repository includes scripts to create a GitHub repository and push all files automatically. Use these commands after logging in with GitHub CLI (`gh auth login`).
-
-### Bash
-
-```bash
-./scripts/init-github-repo.sh [repo-name] [visibility] [branch] [owner] [remote-name]
-```
-
-- `repo-name`: defaults to current folder name
-- `visibility`: `public` or `private` (default: `public`)
-- `branch`: defaults to `main`
-- `owner`: optional GitHub username or org; if omitted, current authenticated user is used
-- `remote-name`: defaults to `origin`
-
-### PowerShell
-
-```powershell
-./scripts/init-github-repo.ps1 -RepoName "risk-agent" -Visibility "public" -Branch "main" -Owner "sanjutech715"
-```
-
-When `gh` is authenticated as `sanjutech715`, the repository will be created in that account.
-
----
-
 ## API Reference
 
 ### `GET /health`
