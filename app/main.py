@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from config import settings
 from core.middleware_logging import LoggingMiddleware
 from core.rate_limiting import RateLimitingMiddleware
-from routes import health, rout
+from routes import auth, health, rout
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -69,6 +69,7 @@ async def global_exception_handler(request: fastapi.Request, exc: Exception):
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(health.router)
+app.include_router(auth.router)          # ← /auth/token, /auth/users/me
 app.include_router(rout.router, prefix="/api/v1")
 
 
