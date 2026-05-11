@@ -175,7 +175,14 @@ http://127.0.0.1:8000/docs
 Run pytest:
 
 ```bash
-pytest tests/test_api.py -q
+# Windows (recommended)
+.\test.bat
+
+# Manual (any OS - requires virtual environment activation)
+python -m pytest tests/ -v
+
+# With coverage
+python -m pytest tests/ --cov=app --cov-report=html
 ```
 
 ---
