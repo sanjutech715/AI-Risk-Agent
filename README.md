@@ -1,9 +1,5 @@
 # Risk Agent API
 
-[![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.136+-green.svg)](https://fastapi.tiangolo.com/)
-
 AI-powered document analysis for summary generation, risk scoring, and automated recommendation.
 
 This project implements a Decision, Summary & Risk Agent pipeline that:
