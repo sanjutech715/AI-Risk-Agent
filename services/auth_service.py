@@ -5,9 +5,19 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional, Any
 
 from fastapi import HTTPException, status
-from jose import jwt, JWTError
 from passlib.context import CryptContext
 from pydantic import BaseModel
+
+
+def _load_jose():
+    try:
+        from jose import jwt, JWTError
+        return jwt, JWTError
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "Missing required dependency 'python-jose[cryptography]'. "
+            "Install it in the active environment or activate the project's virtualenv."
+        ) from exc
 
 from config import settings
 
@@ -97,6 +107,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     else:
         expire = datetime.utcnow() + timedelta(hours=settings.jwt_expiration_hours)
     to_encode.update({"exp": expire, "iat": datetime.utcnow()})
+    jwt, _ = _load_jose()
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
     return encoded_jwt
 
@@ -104,6 +115,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 def verify_token(token: str) -> Optional[str]:
     """Verify JWT token and return username."""
     try:
+        jwt, JWTError = _load_jose()
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
         username: Optional[str] = payload.get("sub")
         return username

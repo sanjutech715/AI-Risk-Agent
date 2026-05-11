@@ -7,7 +7,8 @@ Loads configuration from environment variables with validation.
 
 import os
 from typing import List, Optional
-from pydantic import Field
+from distutils.util import strtobool
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -93,6 +94,30 @@ class Settings(BaseSettings):
     enable_authentication: bool = Field(default=False)
     enable_rate_limiting: bool = Field(default=True)
 
+    @field_validator(
+        "reload",
+        "debug",
+        "cors_allow_credentials",
+        "cache_enabled",
+        "health_check_database",
+        "health_check_cache",
+        "health_check_llm",
+        "enable_batch_processing",
+        "enable_caching",
+        "enable_authentication",
+        "enable_rate_limiting",
+        mode="before",
+    )
+    def _parse_bool_fields(cls, value):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"true", "1", "yes", "on", "y", "debug"}:
+                return True
+            if normalized in {"false", "0", "no", "off", "n", "release", "prod", "production"}:
+                return False
+        return value
 
 
 # ── Global settings instance ──────────────────────────────────────────────────

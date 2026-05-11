@@ -11,12 +11,22 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from config import settings
 from core.database import get_db_session
 from core.models import APIKey
+
+
+def _load_jose():
+    try:
+        from jose import JWTError, jwt
+        return JWTError, jwt
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "Missing required dependency 'python-jose[cryptography]'. "
+            "Install it in the active environment or activate the project's virtualenv."
+        ) from exc
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +64,7 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
         expire = datetime.utcnow() + timedelta(hours=settings.jwt_expiration_hours)
 
     to_encode.update({"exp": expire, "iat": datetime.utcnow()})
+    _, jwt = _load_jose()
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
 
     return encoded_jwt
@@ -62,9 +73,10 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
 def verify_token(token: str) -> Optional[Dict[str, Any]]:
     """Verify and decode JWT token."""
     try:
+        _, jwt = _load_jose()
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
         return payload
-    except JWTError as e:
+    except Exception as e:
         logger.warning(f"JWT verification failed: {e}")
         return None
 

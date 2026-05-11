@@ -148,6 +148,8 @@ source .venv/bin/activate
 python run.py
 ```
 
+> Important: do not run `py run.py` on Windows unless you have installed dependencies into the global Python environment. The `py` launcher may select a different interpreter than the project virtual environment.
+
 Open Swagger UI at:
 
 ```text
