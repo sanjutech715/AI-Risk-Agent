@@ -1,250 +1,323 @@
-# Risk Agent API
+# 🛡️ Risk Agent API
 
-AI-powered document analysis for summary generation, risk scoring, and automated recommendation.
+<div align="center">
 
-This project implements a Decision, Summary & Risk Agent pipeline that:
-- accepts standardized document payloads,
-- computes a deterministic risk score,
-- produces an `approve`/`review`/`reject` recommendation,
-- and returns an LLM-generated summary.
+[![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.136+-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Type Checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue.svg)](https://mypy-lang.org/)
 
-## Table of Contents
+**AI-powered document analysis — risk scoring, LLM summaries, and automated recommendations.**
 
-- [Features](#features)
-- [Architecture](#architecture)
-- [Project Structure](#project-structure)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [API Reference](#api-reference)
-- [Data Models](#data-models)
-- [Risk Scoring](#risk-scoring)
-- [Development](#development)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-- [License](#license)
+[Quick Start](#-quick-start) · [API Reference](#-api-reference) · [Architecture](#-architecture) · [Risk Scoring](#-risk-scoring) · [Contributing](#-contributing)
+
+</div>
 
 ---
 
-## Features
+## 📖 Overview
 
-- **Decision Agent** — deterministic risk scoring plus recommendation logic.
-- **Summary Agent** — AI-generated document summaries via Ollama or Anthropic.
-- **Risk Agent** — end-to-end orchestration for a single document or batched payloads.
-- **Batch processing** — handle up to 20 documents in one request.
-- **FastAPI** — production-ready API with Swagger UI and ReDoc.
+The **Risk Agent API** is a production-ready FastAPI service that accepts standardized document payloads, computes a deterministic risk score, and returns an LLM-generated summary with an automated `approve` / `review` / `reject` recommendation.
+
+| Capability | Description |
+|---|---|
+| 🎯 **Decision Agent** | Deterministic risk scoring with weighted components |
+| 📝 **Summary Agent** | AI-generated summaries via Ollama or Anthropic Claude |
+| ⚙️ **Risk Agent** | End-to-end orchestration for single or batch payloads |
+| 📦 **Batch Processing** | Up to 20 documents analyzed concurrently |
+| 🔒 **Auth** | JWT Bearer + API Key authorization |
+| 💚 **Health Checks** | Degraded-mode tolerance for cache/LLM failures |
 
 ---
 
-## Architecture
+## 📋 Table of Contents
 
-The Risk Agent API follows a modular architecture with clear separation of concerns:
+- [Architecture](#-architecture)
+- [Document Flow](#-document-flow)
+- [Project Structure](#-project-structure)
+- [Requirements](#-requirements)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Configuration](#-configuration)
+- [API Reference](#-api-reference)
+- [Data Models](#-data-models)
+- [Risk Scoring](#-risk-scoring)
+- [Development](#-development)
+- [Testing](#-testing)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+---
+
+## 🏗️ Architecture
+
+The Risk Agent API follows a **modular, layered architecture** with clear separation of concerns across routing, business logic, and infrastructure services.
+
+```mermaid
+graph TB
+    subgraph CLIENT["🌐 Client Layer"]
+        SW["Swagger UI · /docs"]
+        EX["External App · cURL / SDK"]
+    end
+
+    subgraph API["⚡ FastAPI Application  •  app/main.py"]
+        direction TB
+        MW["🛡️ Middleware — Logging · Rate Limiting · CORS"]
+        RT["🔀 Routers  •  routes/"]
+        RT_A["POST /api/v1/analyze\nPOST /api/v1/batch"]
+        RT_H["GET /health\nGET /health/detailed"]
+        RT_AU["POST /auth/token\nPOST /auth/users"]
+    end
+
+    subgraph CORE["🧠 Core Agent  •  core/agent/"]
+        AG["agent.py — Orchestrator"]
+        SC["scoring.py — Risk Calculator"]
+        MD["models.py — Pydantic Schemas"]
+    end
+
+    subgraph SVC["🔧 Services  •  core/"]
+        LLM["llm_service.py — LLM Summary"]
+        DB["database.py — Session Manager"]
+        CA["cache.py — Redis Fallback"]
+    end
+
+    subgraph INFRA["🗄️ Infrastructure"]
+        OL["🦙 Ollama — Local LLM"]
+        AN["🤖 Anthropic — Claude API"]
+        RD["🔴 Redis — Cache Store"]
+        PG["🐘 PostgreSQL — Database"]
+    end
+
+    SW & EX --> MW
+    MW --> RT
+    RT --> RT_A & RT_H & RT_AU
+    RT_A --> AG
+    AG --> SC & MD
+    AG --> LLM & DB & CA
+    LLM --> OL & AN
+    CA --> RD
+    DB --> PG
+```
 
 ### Core Components
 
-1. **Routers** (`routes/`): Handle HTTP requests and responses
-   - `agent.py`: Main API endpoints for document analysis
-   - `health.py`: Health check endpoint
-
-2. **Agent Module** (`core/agent/`): Business logic for risk assessment
-   - `models.py`: Pydantic request/response schemas
-   - `scoring.py`: Risk score calculation algorithms
-   - `agent.py`: Orchestrates scoring and summary generation
-
-3. **Core Services** (`core/`): Shared services and infrastructure
-   - `llm_service.py`: LLM integration for document summarization
-   - `database.py`: Database and session management
-   - `cache.py`: Cache abstraction and Redis fallback
-
-4. **Application** (`app/`): FastAPI application factory and startup
-   - `main.py`: FastAPI app factory and router registration
-
-### Data Flow
-
-```
-Request → Router → Decision Agent → Scoring → LLM Service → Response
-```
-
-### Key Design Principles
-
-- **Modular**: Each component has a single responsibility
-- **Testable**: Comprehensive test suite with pytest
-- **Configurable**: Environment-based configuration
-- **Observable**: Health checks and structured logging
-- **Secure**: Input validation and error handling
+| Layer | Module | Responsibility |
+|---|---|---|
+| **Routers** | `routes/rout.py` | HTTP request handling, input validation |
+| **Auth** | `routes/auth.py` | JWT token issuance, user management |
+| **Agent** | `core/agent/agent.py` | Orchestration of scoring + summary |
+| **Scoring** | `core/agent/scoring.py` | Deterministic risk calculation |
+| **LLM Service** | `core/llm_service.py` | Ollama / Anthropic integration |
+| **Cache** | `core/cache.py` | Redis with graceful fallback |
+| **Database** | `core/database.py` | Async session management |
 
 ---
 
-## Project Structure
+## 🔄 Document Flow
+
+Every document submitted to `/api/v1/analyze` travels through this exact pipeline before a response is returned.
+
+```mermaid
+flowchart TD
+    A(["👤 User — Sends Request"])
+
+    subgraph IN["📥 Input"]
+        B["DocumentAnalysisRequest\ndocument_id · standardized_data · validation_result"]
+    end
+
+    subgraph VAL["✅ Validation — FastAPI / Pydantic"]
+        C{"Schema Valid?"}
+        C_NO["❌ 422 Unprocessable Entity"]
+    end
+
+    subgraph SCORE["📊 Risk Scoring — scoring.py"]
+        D["validation_risk × 0.30"]
+        E["completeness_risk × 0.25"]
+        F["anomaly_risk × 0.25"]
+        G["schema_risk × 0.20"]
+        H["Composite Risk Score 0.0 → 1.0"]
+    end
+
+    subgraph DECIDE["🎯 Decision Logic"]
+        I{"Score Threshold?"}
+        I_AP["✅ APPROVE — score ≤ 0.25"]
+        I_RV["🟡 REVIEW — 0.25 to 0.55"]
+        I_RJ["❌ REJECT — score > 0.55"]
+    end
+
+    subgraph LLM["🤖 LLM Summary — llm_service.py"]
+        J{"Provider?"}
+        J_OL["🦙 Ollama — Local"]
+        J_AN["🤖 Anthropic — Cloud"]
+        J_FB["📝 Fallback Summary"]
+        K["Generated Summary Text"]
+    end
+
+    subgraph OUT["📤 AgentResponse"]
+        L["document_id · summary · risk_score\nrecommendation · confidence\nrisk_breakdown · reasoning · flags\nprocessed_at"]
+    end
+
+    A --> B --> C
+    C -->|"Invalid"| C_NO
+    C -->|"Valid ✓"| D & E & F & G
+    D & E & F & G --> H
+    H --> I
+    I -->|"≤ 0.25"| I_AP
+    I -->|"0.26 – 0.55"| I_RV
+    I -->|"> 0.55"| I_RJ
+    I_AP & I_RV & I_RJ --> J
+    J -->|"OLLAMA_URL set"| J_OL
+    J -->|"ANTHROPIC_API_KEY set"| J_AN
+    J -->|"None configured"| J_FB
+    J_OL & J_AN & J_FB --> K
+    K --> L
+    L --> Z(["📬 200 OK — Response returned"])
+```
+
+---
+
+## 📁 Project Structure
 
 ```
 risk-agent/
-├── run.py                    # Entry point that starts uvicorn
+├── run.py                        # 🚀 Entry point — starts Uvicorn
 ├── pyproject.toml
 ├── requirements.txt
 ├── README.md
+│
 ├── app/
 │   ├── __init__.py
-│   └── main.py               # FastAPI app factory and router registration
-├── config.py                 # Application configuration via Pydantic settings
+│   └── main.py                   # FastAPI factory · registers all routers & middleware
+│
+├── config.py                     # Pydantic settings (env vars)
+│
 ├── core/
-│   ├── __init__.py
 │   ├── agent/
-│   │   ├── __init__.py
-│   │   ├── agent.py           # Orchestrates risk analysis
-│   │   ├── models.py          # Request/response schemas
-│   │   └── scoring.py         # Risk scoring logic
-│   ├── cache.py              # Cache abstraction and Redis fallback
-│   ├── database.py           # Database session management
-│   ├── llm_service.py        # LLM summary generation
-│   ├── middleware_logging.py
-│   ├── rate_limiting.py
+│   │   ├── agent.py              # Orchestrates risk analysis
+│   │   ├── models.py             # Request / response Pydantic schemas
+│   │   └── scoring.py            # Risk score calculation algorithms
+│   ├── cache.py                  # Redis abstraction with in-memory fallback
+│   ├── database.py               # Async DB session management
+│   ├── llm_service.py            # Ollama / Anthropic integration
+│   ├── middleware_logging.py     # Structured request logging
+│   └── rate_limiting.py          # Rate-limit middleware
+│
 ├── routes/
-│   ├── __init__.py
-│   ├── agent.py              # POST /api/v1/analyze and POST /api/v1/batch
-│   └── health.py             # GET /health
+│   ├── auth.py                   # POST /auth/token · POST /auth/users
+│   ├── health.py                 # GET /health · GET /health/detailed
+│   └── rout.py                   # POST /api/v1/analyze · POST /api/v1/batch
+│
+├── services/
+│   ├── auth.py                   # JWT helpers
+│   └── auth_service.py           # User store & verification
+│
 ├── data/
-│   └── risk_agent.json       # Example request payload
+│   └── risk_agent.json           # Example request payload
+│
 └── tests/
-    ├── __init__.py
     ├── conftest.py
     └── test_api.py
 ```
 
 ---
 
-## Requirements
+## 📦 Requirements
 
-- Python 3.11+
-- Redis (optional; health checks degrade gracefully when unavailable)
-- PostgreSQL / async database for full runtime
+- **Python** 3.11+
+- **Redis** *(optional — health checks degrade gracefully)*
+- **PostgreSQL** *(or any async-compatible database)*
+- **Ollama** or **Anthropic API key** for LLM summaries
 
 ---
 
-## Installation
+## ⚙️ Installation
 
 ```bash
+# Clone the repo
+git clone <repo-url> && cd risk-agent
+
+# Install with pip
 pip install -r requirements.txt
+
+# OR with uv (recommended)
+uv sync
 ```
 
 ---
 
-## Quick Start
-
-Activate the virtual environment and start the API server:
-
-```bash
-# Windows (option 1 - manual activation)
-.venv\Scripts\activate
-python run.py
-
-# Windows (option 2 - batch file - recommended)
-.\run.bat
-
-# Linux/macOS
-source .venv/bin/activate
-python run.py
-```
-
-> Important: do not run `py run.py` on Windows unless you have installed dependencies into the global Python environment. The `py` launcher may select a different interpreter than the project virtual environment.
-
-Open Swagger UI at:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
----
-
-## Health Endpoints
-
-- `GET /health` — basic service health
-- `GET /health/detailed` — checks database, cache, and LLM dependencies
-
----
-
-## API Endpoints
-
-- `POST /api/v1/analyze` — analyze a single document
-- `POST /api/v1/batch` — analyze multiple documents
-
----
-
-## Testing
-
-Run pytest:
-
-```bash
-# Windows (recommended)
-.\test.bat
-
-# Manual (any OS - requires virtual environment activation)
-python -m pytest tests/ -v
-
-# With coverage
-python -m pytest tests/ --cov=app --cov-report=html
-```
-
----
-
-## Project Layout
-
-- `run.py` — entry point that starts Uvicorn
-- `app/` — FastAPI application factory
-- `core/` — services, auth, database, cache, and agent logic
-- `routes/` — API routers
-- `tests/` — automated tests
-- `data/` — example request payloads
-
----
-
-## Notes
-
-- The app supports hot reload via `UVICORN_RELOAD=1 python run.py`
-- Swagger docs are available at `/docs`
-- Health checks are designed to tolerate transient cache or LLM failures by returning a degraded status rather than a hard 503 failure
-
-If no LLM provider is configured, the service returns a valid response with a fallback summary.
-
----
-
-## Running the Server
+## 🚀 Quick Start
 
 ```bash
 python run.py
-
-# or via uv
+# or
 uv run python run.py
 ```
 
-Environment variables:
+Open **http://127.0.0.1:8000/docs** for the interactive Swagger UI.
 
-| Variable            | Default     | Description |
-|---------------------|-------------|-------------|
-| `PORT`              | `8000`      | API port |
-| `UVICORN_RELOAD`    | `0`         | Set `1` to enable hot reload |
-| `OLLAMA_URL`        | `http://127.0.0.1:11434` | Local Ollama endpoint |
-| `OLLAMA_MODEL`      | `llama2`    | Ollama model name |
-| `ANTHROPIC_API_KEY` | *(not set)* | Optional Anthropic API key |
-| `LLM_PROVIDER`      | `ollama` if `OLLAMA_URL` set, else `anthropic` | Preferred LLM provider |
+### First-time Auth Setup
 
-If no LLM provider is configured, the service still returns a valid response with a fallback summary.
+```bash
+# 1. Create a user
+curl -X POST http://localhost:8000/auth/users \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "admin123", "is_admin": true}'
+
+# 2. Get a JWT token
+curl -X POST http://localhost:8000/auth/token \
+  -d "username=admin&password=admin123"
+
+# 3. Use the token in requests
+curl -X POST http://localhost:8000/api/v1/analyze \
+  -H "Authorization: Bearer <your-token>" \
+  -H "Content-Type: application/json" \
+  -d @data/risk_agent.json
+```
 
 ---
 
-## API Reference
+## 🔧 Configuration
 
-### `GET /health`
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `8000` | API server port |
+| `UVICORN_RELOAD` | `0` | Set `1` to enable hot reload |
+| `OLLAMA_URL` | `http://127.0.0.1:11434` | Local Ollama endpoint |
+| `OLLAMA_MODEL` | `llama2` | Ollama model name |
+| `ANTHROPIC_API_KEY` | *(not set)* | Anthropic Claude API key |
+| `LLM_PROVIDER` | `ollama` | `ollama` or `anthropic` |
+| `ENABLE_AUTHENTICATION` | `true` | Enable JWT auth |
+| `SECRET_KEY` | *(required)* | JWT signing secret |
 
-Returns service health metadata.
+---
 
-### `POST /api/v1/analyze`
+## 🔌 API Reference
 
-Analyze a single document and return an agent response.
+### Authentication
 
-**Request body:**
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/auth/users` | Register a new user |
+| `POST` | `/auth/token` | Login — returns JWT access token |
+| `GET` | `/auth/users/me` | Get current user info |
+
+### Health
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Basic liveness probe |
+| `GET` | `/health/detailed` | Checks DB, cache, and LLM dependencies |
+
+### Agent
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/analyze` | Analyze a single document |
+| `POST` | `/api/v1/batch` | Analyze up to 20 documents in parallel |
+
+### Example Request — `POST /api/v1/analyze`
 
 ```json
 {
@@ -258,7 +331,7 @@ Analyze a single document and return an agent response.
     "expiry_date": "2024-04-15",
     "counterparty": "Globex Ltd",
     "jurisdiction": "US",
-    "metadata": {"po_number": "PO-9981"}
+    "metadata": { "po_number": "PO-9981" }
   },
   "validation_result": {
     "is_valid": true,
@@ -270,33 +343,32 @@ Analyze a single document and return an agent response.
 }
 ```
 
-**Core response:**
+### Example Response
 
 ```json
 {
   "document_id": "DOC001",
-  "summary": "...",
+  "summary": "Invoice from Acme Corp for USD 15,000...",
   "risk_score": 0.12,
   "recommendation": "approve",
-  "confidence": 0.95
+  "confidence": 0.95,
+  "risk_breakdown": {
+    "validation_risk": 0.00,
+    "completeness_risk": 0.03,
+    "anomaly_risk": 0.00,
+    "schema_risk": 0.00
+  },
+  "reasoning": "Document passed all validation checks with high completeness.",
+  "flags": [],
+  "processed_at": "2024-01-15T10:30:00Z"
 }
 ```
 
-The full response also includes `risk_breakdown`, `reasoning`, `flags`, and `processed_at` for orchestration and auditability.
-
 ---
 
-### `POST /api/v1/batch`
+## 📐 Data Models
 
-Process up to 20 documents concurrently. The request body is an array of the same objects accepted by `/analyze`.
-
----
-
-## Data Models
-
-### Request Models
-
-#### DocumentAnalysisRequest
+### `DocumentAnalysisRequest`
 
 ```python
 class DocumentAnalysisRequest(BaseModel):
@@ -305,11 +377,11 @@ class DocumentAnalysisRequest(BaseModel):
     validation_result: ValidationResult
 ```
 
-#### StandardizedData
+### `StandardizedData`
 
 ```python
 class StandardizedData(BaseModel):
-    document_type: str  # e.g., "invoice", "contract"
+    document_type: str          # "invoice", "contract", etc.
     issuer: str
     amount: Optional[float]
     currency: Optional[str]
@@ -320,206 +392,152 @@ class StandardizedData(BaseModel):
     metadata: Dict[str, Any]
 ```
 
-#### ValidationResult
-
-```python
-class ValidationResult(BaseModel):
-    is_valid: bool
-    missing_fields: List[str]
-    anomalies: List[str]
-    schema_errors: List[str]
-    completeness_score: float  # 0.0 to 1.0
-```
-
-### Response Models
-
-#### AgentResponse
+### `AgentResponse`
 
 ```python
 class AgentResponse(BaseModel):
     document_id: str
     summary: str
-    risk_score: float  # 0.0 to 1.0
+    risk_score: float                                    # 0.0 → 1.0
     recommendation: Literal["approve", "review", "reject"]
-    confidence: float  # 0.0 to 1.0
+    confidence: float                                    # 0.0 → 1.0
     risk_breakdown: RiskBreakdown
     reasoning: str
     flags: List[str]
     processed_at: datetime
 ```
 
-#### RiskBreakdown
+---
 
-```python
-class RiskBreakdown(BaseModel):
-    validation_risk: float
-    completeness_risk: float
-    anomaly_risk: float
-    schema_risk: float
+## 📊 Risk Scoring
+
+The composite risk score is a **weighted sum** of four components:
+
+```mermaid
+pie title Risk Score Component Weights
+    "validation_risk (30%)" : 30
+    "completeness_risk (25%)" : 25
+    "anomaly_risk (25%)" : 25
+    "schema_risk (20%)" : 20
+```
+
+| Component | Weight | Calculation Method |
+|---|---|---|
+| `validation_risk` | **30%** | `1.0` if invalid · else `missing_fields × 0.1` |
+| `completeness_risk` | **25%** | `1.0 − completeness_score` |
+| `anomaly_risk` | **25%** | Sigmoid penalty per anomaly count |
+| `schema_risk` | **20%** | Linear penalty per schema error |
+
+### Recommendation Thresholds
+
+```
+Score  0.0 ──────── 0.25 ──────────────── 0.55 ──────────── 1.0
+        │   ✅ APPROVE   │   🟡 REVIEW      │  ❌ REJECT      │
+```
+
+| Score Range | Recommendation |
+|---|---|
+| `0.00 – 0.25` | ✅ `approve` |
+| `0.26 – 0.55` | 🟡 `review` |
+| `0.56 – 1.00` | ❌ `reject` |
+
+---
+
+## 🛠️ Development
+
+```bash
+# Install dev dependencies
+uv sync --dev
+
+# Activate virtual environment
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
+# Run with hot reload
+UVICORN_RELOAD=1 python run.py
+```
+
+### Code Quality
+
+```bash
+ruff check .          # Linting
+black .               # Formatting
+mypy .                # Type checking
 ```
 
 ---
 
-## Risk Scoring
+## 🧪 Testing
 
-The composite risk score is computed as a weighted sum of four risk components:
+```bash
+# Run all tests
+pytest tests/ -v
 
-| Component          | Weight | Description |
-|--------------------|--------|-------------|
-| `validation_risk`  | 30%    | Invalid documents and missing fields |
-| `completeness_risk`| 25%    | Inverse of completeness score |
-| `anomaly_risk`     | 25%    | Sigmoid penalty for anomalies |
-| `schema_risk`      | 20%    | Linear penalty for schema errors |
+# With coverage report
+pytest tests/ --cov=core --cov-report=term-missing
 
-Recommendation thresholds:
-
-| Score Range | Recommendation |
-|-------------|----------------|
-| `0.00 – 0.25` | `approve` |
-| `0.26 – 0.55` | `review` |
-| `0.56 – 1.00` | `reject` |
+# Via uv
+uv run pytest
+```
 
 ---
 
-## Development
+## 🐳 Deployment
 
-### Setting up Development Environment
-
-1. Clone the repository:
-   ```bash
-   git clone <repo-url>
-   cd risk-agent
-   ```
-
-2. Install dependencies with dev extras:
-   ```bash
-   uv sync --dev
-   ```
-
-3. Activate the virtual environment:
-   ```bash
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-4. Run in development mode with hot reload:
-   ```bash
-   UVICORN_RELOAD=1 python run.py
-   ```
-
-### Code Quality
-
-- **Linting**: Use `ruff` for fast Python linting
-- **Formatting**: Use `black` for consistent code formatting
-- **Type checking**: Use `mypy` for static type analysis
-
-### Adding New Features
-
-1. Create a feature branch: `git checkout -b feature/new-feature`
-2. Write tests first (TDD approach)
-3. Implement the feature
-4. Update documentation
-5. Run full test suite
-6. Submit a pull request
-
----
-
-## Deployment
-
-### Docker Deployment
-
-Build and run with Docker:
+### Docker
 
 ```dockerfile
 FROM python:3.11-slim
-
 WORKDIR /app
 COPY . .
 RUN pip install -r requirements.txt
-
 EXPOSE 8000
 CMD ["python", "run.py"]
 ```
 
 ```bash
 docker build -t risk-agent .
-docker run -p 8000:8000 risk-agent
+docker run -p 8000:8000 \
+  -e ANTHROPIC_API_KEY=your-key \
+  -e LLM_PROVIDER=anthropic \
+  risk-agent
 ```
 
-### Production Considerations
+### Production Checklist
 
-- Set `UVICORN_RELOAD=0` for production
-- Use a reverse proxy (nginx/Caddy) for SSL termination
-- Configure proper logging and monitoring
-- Set environment variables securely
-- Use health checks for container orchestration
-
-### Environment Variables for Production
-
-```bash
-export PORT=8000
-export OLLAMA_URL=http://ollama-service:11434
-export ANTHROPIC_API_KEY=your-api-key-here
-export LLM_PROVIDER=anthropic
-```
+- [ ] Set `UVICORN_RELOAD=0`
+- [ ] Set a strong `SECRET_KEY` for JWT signing
+- [ ] Configure a real PostgreSQL database
+- [ ] Set `OLLAMA_URL` or `ANTHROPIC_API_KEY`
+- [ ] Use a reverse proxy (nginx / Caddy) for SSL termination
+- [ ] Enable structured logging and monitoring
 
 ---
 
-## Testing
-
-Run the test suite with:
-
-```bash
-pytest tests/
-```
-
-Or with uv:
-
-```bash
-uv run pytest
-```
-
----
-
-## Interactive Docs
-
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
----
-
-## Contributing
-
-We welcome contributions! Please follow these guidelines:
-
-### How to Contribute
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass: `pytest`
-6. Update documentation as needed
-7. Commit your changes: `git commit -m 'Add amazing feature'`
-8. Push to the branch: `git push origin feature/amazing-feature`
-9. Open a Pull Request
+3. Write tests first (TDD approach)
+4. Implement and document your changes
+5. Run the full suite: `pytest && ruff check . && mypy .`
+6. Commit: `git commit -m 'feat: add amazing feature'`
+7. Push and open a Pull Request
 
 ### Code Standards
 
-- Follow PEP 8 style guidelines
-- Use type hints for all function parameters and return values
-- Write comprehensive docstrings
-- Maintain test coverage above 80%
-- Use meaningful commit messages
-
-### Reporting Issues
-
-- Use GitHub Issues to report bugs
-- Provide detailed steps to reproduce
-- Include relevant error messages and logs
-- Suggest potential solutions if possible
+- PEP 8 + `black` formatting enforced
+- Type hints required on all functions
+- Docstrings on all public APIs
+- Test coverage ≥ 80%
 
 ---
 
-## License
+## 📄 License
 
-MIT
+Released under the [MIT License](https://opensource.org/licenses/MIT).
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ using FastAPI · Pydantic · Ollama · Anthropic Claude</sub>
+</div>
